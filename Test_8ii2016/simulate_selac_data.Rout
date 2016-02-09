@@ -1,0 +1,83 @@
+
+R version 3.2.3 (2015-12-10) -- "Wooden Christmas-Tree"
+Copyright (C) 2015 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin13.4.0 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> rm(list=ls())
+> library(selac)
+Loading required package: ape
+Loading required package: seqinr
+Loading required package: ade4
+
+Attaching package: ‘seqinr’
+
+The following objects are masked from ‘package:ape’:
+
+    as.alignment, consensus
+
+Loading required package: nloptr
+Loading required package: nnet
+Warning messages:
+1: replacing previous import by ‘seqinr::as.alignment’ when loading ‘selac’ 
+2: replacing previous import by ‘seqinr::consensus’ when loading ‘selac’ 
+> 
+> phy <- read.tree('yeast.tre')
+> 
+> set.size <- 2
+> 
+> gtr.params <- runif(6, 0.1, 2)
+> acgt.freq <- runif(4)
+> acgt.freq <- (acgt.freq / sum(acgt.freq))[-4]
+> 
+> numcode <- 1
+> codon.sets <- selac:::CreateCodonSets()
+> codon.set.translate <- apply(codon.sets, 2, n2s)
+> codon.name <- apply(codon.set.translate, 1, paste, collapse="")
+> codon.aa <- sapply(codon.name,selac:::TranslateCodon, numcode=numcode)
+> aa.names <- unique(codon.aa)
+> root.codon.freq.matrix <- matrix(0, nrow=length(aa.names), ncol=length(codon.aa))
+> rownames(root.codon.freq.matrix) <- aa.names
+> colnames(root.codon.freq.matrix) <- names(codon.aa)
+> for (aa.index in sequence(dim(root.codon.freq.matrix)[1])) {
++ 	matching.codons <- which(codon.aa == rownames(root.codon.freq.matrix)[aa.index])
++ 	root.codon.freq.matrix[aa.index, matching.codons] <- 1/length(matching.codons)
++ }
+> 
+> for(g in 1:set.size)
++ {
++   gene.length <- round(runif(1, 100, 1000))
++   optim.aa <- sample(x = c("R", "H", "K", "D", "E", "S", "T", "N", "Q", "C", "G", "P", "A", "V", "I", "L", "M", "F", "Y", "W"), 
++                      size = gene.length, replace = T)
++   
++   #They are ordered as follows: C.q.phi, alpha, beta, Ne, base.freqs for A C G, and the rates for the nucleotide model.
++   model.param <- c(runif(1, 10^-10, 10^-5), runif(2, 0.01, 1), 57852168, acgt.freq, gtr.params)
++   names(model.param) <- c("qphic", "alpha", "beta", "Ne", "A.freq", "C.freq", "G.freq", 
++                           "GTR.alpha", "GTR.beta", "GTR.gamma", "GTR.delta", "GTR.epsilon", "GTR.eta")
++   
++   
++   nucl.data <- SelacSimulator(phy, pars = model.param, aa.optim_array = optim.aa, 
++                  root.codon.array = root.codon.freq.matrix, numcode=1, aa.properties=NULL, 
++                  nuc.model = "GTR", k.levels=0, diploid=TRUE)
++   
++   sim.name <- paste("gene", g, sep = "")
++   write.dna(x = nucl.data, file = paste(sim.name, "fasta", sep = "."), format = "fasta", nbcol = 1, colw = 60)
++   save(list = c("model.param", "optim.aa", "root.codon.freq.matrix", "phy"), file = paste(sim.name, "rda", sep = "."))
++ }
+> 
+> proc.time()
+   user  system elapsed 
+ 79.340   0.511  80.345 
