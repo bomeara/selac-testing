@@ -41,5 +41,5 @@ for(g in 1:set.size)
   
   sim.name <- paste("gene", g, sep = "")
   write.dna(x = nucl.data, file = paste(sim.name, "fasta", sep = "."), format = "fasta", nbcol = 1, colw = 60)
-  save(list = c("model.param", "optim.aa", "root.codon.freq", "phy"), file = paste(sim.name, "rda", sep = "."))
+  save(list = c("model.param", "optim.aa", "root.codon.freq.matrix", "phy"), file = paste(sim.name, "rda", sep = "."))
 }
